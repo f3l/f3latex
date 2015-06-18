@@ -17,5 +17,9 @@ As LP is quite limited, I decided to write my own plugin allowing not only math 
 
 Original LP restricts the usage of many LaTeX-Macros such as `\renewcommand`. Allowing them in F3LP gives much more possibilities, but may be a security risk. Usage at your own risk!
 
+## Install ##
+
+Move the f3latex-folder to your local gajim-plugin-folder (usually something like `~/.gajim/plugins/` or `~/.local/share/gajim/plugins/`, then activate it using the Plugin-Manager.
+
 [1]: http://gajim.org/ "Gajim"
 [2]: https://trac-plugins.gajim.org/wiki/LatexPlugin "Latex Plugin"
