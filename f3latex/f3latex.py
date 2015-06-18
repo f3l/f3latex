@@ -251,17 +251,10 @@ class LatexPluginConfiguration(GajimPluginConfigDialog):
         """
         performs very simple checks (check if executable is in PATH)
         """
-        self.show_result(_('Test Latex Binary'))
+        self.show_result(_('Test PDFLatex Binary'))
         exitcode = try_run(['pdflatex', '-version'], None)
         if exitcode != 0:
-            self.show_result(_('  No LaTeX binary found in PATH'))
-        else:
-            self.show_result(_('  OK'))
-
-        self.show_result(_('Test dvipng'))
-        exitcode = try_run(['dvipng', '--version'], None)
-        if exitcode != 0:
-            self.show_result(_('  No dvipng binary found in PATH'))
+            self.show_result(_('  No PDFLaTeX binary found in PATH'))
         else:
             self.show_result(_('  OK'))
 
@@ -299,12 +292,6 @@ class F3LatexPlugin(GajimPlugin):
         else:
             latex_available = True
 
-        exitcode = try_run(['dvipng', '--version'], None)
-        if exitcode != 0:
-            dvipng_available = False
-        else:
-            dvipng_available = True
-
         exitcode = try_run(['convert', '-version'], None)
         if exitcode != 0:
             imagemagick_available = False
@@ -320,17 +307,17 @@ class F3LatexPlugin(GajimPlugin):
                 pkgs = 'texlive-latex-base'
             self.available_text = _('LaTeX is not available')
             self.activatable = False
-        if not dvipng_available and not imagemagick_available:
+        if not imagemagick_available:
             if os.name == 'nt':
                 if not pkgs:
                     pkgs = 'MikTex'
             else:
                 if pkgs:
                     pkgs += _(' and ')
-                pkgs += '%s or %s' % ('dvipng', 'ImageMagick')
+                pkgs += '%s' % ('ImageMagick')
             if self.available_text:
                 self.available_text += ' and '
-            self.available_text += _('dvipng and Imagemagick are not available')
+            self.available_text += _('Imagemagick is not available')
 
         if self.available_text:
             self.activatable = False
