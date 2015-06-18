@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 #
-## plugins/latex/latex.py
+## plugins/f3latex/f3latex.py
 ##
 ## Copyright (C) 2010-2011 Yves Fischer <yvesf AT xapek.org>
 ## Copyright (C) 2011 Yann Leboulanger <asterix AT lagaule.org>
+## Copyright (C) 2015 Oliver Rümpelein <oli_r AT fg4f.de>
 ##
 ## This file is part of Gajim.
 ##
@@ -38,16 +39,19 @@ from plugins.gui import GajimPluginConfigDialog
 gtk.gdk.threads_init() # for gtk.gdk.thread_[enter|leave]()
 
 def latex_template(code):
-    return '''\\documentclass[12pt]{article}
-\\usepackage[dvips]{graphicx}
+    return '''\\documentclass[ngerman,12pt,parskip=half]{scrartcl}
+\\usepackage{graphicx}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{lmodern}
 \\usepackage{amsmath}
 \\usepackage{amssymb}
+\\usepackage{tikz-cd}
+\\usepackage{mathtools}
 \\pagestyle{empty}
 \\begin{document}
 \\begin{large}
-\\begin{gather*}
 %s
-\\end{gather*}
 \\end{large}
 \\end{document}''' % (code)
 
@@ -78,15 +82,12 @@ def try_run(argv, directory):
             'command': " ".join(argv),
             'error': helpers.decode_string(str(e))}
 
-BLACKLIST = ['\def', '\\let', '\\futurelet', '\\newcommand', '\\renewcomment',
-   '\\else', '\\fi', '\\write', '\\input', '\\include', '\\chardef',
-   '\\catcode', '\\makeatletter', '\\noexpand', '\\toksdef', '\\every',
-   '\\errhelp', '\\errorstopmode', '\\scrollmode', '\\nonstopmode',
-   '\\batchmode', '\\read', '\\csname', '\\newhelp', '\\relax', '\\afterground',
-   '\\afterassignment', '\\expandafter', '\\noexpand', '\\special', '\\command',
-   '\\loop', '\\repeat', '\\toks', '\\output', '\\line', '\\mathcode', '\\name',
-   '\\item', '\\section', '\\mbox', '\\DeclareRobustCommand', '\\[', '\\]'
-]
+BLACKLIST = ['\def', '\\let', '\\futurelet', '\\write', '\\input', '\\include',
+             '\\catcode', '\\makeatletter', '\\noexpand', '\\toksdef', '\\every',
+             '\\errhelp', '\\errorstopmode', '\\scrollmode', '\\nonstopmode',
+             '\\batchmode', '\\read', '\\csname', '\\newhelp', '\\relax', '\\afterground',
+             '\\afterassignment', '\\expandafter', '\\noexpand', '\\special', '\\command',
+             '\\loop', '\\return epeat', '\\toks', '\\output', '\\line', '\\mathcode', '\\name',]
 
 
 class LatexRenderer(Thread):
@@ -153,8 +154,8 @@ class LatexRenderer(Thread):
                     'tex': ['-fg', 'rgb 0.0 0.0 0.0']}[fmt]
 
         try:
-            tmpdir = mkdtemp(prefix='gajim_tex')
-            tmpfd, tmppng = mkstemp(prefix='gajim_tex', suffix='.png')
+            tmpdir = mkdtemp(prefix='gajim_f3tex')
+            tmpfd, tmppng = mkstemp(prefix='gajim_f3tex', suffix='.png')
             os.close(tmpfd)
         except Exception:
             msg = 'Could not create temporary files for Latex plugin'
@@ -163,31 +164,26 @@ class LatexRenderer(Thread):
                 msg, self.code[2:len(self.code)-2]))
             return False
 
-        tmpfile = os.path.join(tmpdir, 'gajim_tex')
+        tmpfile = os.path.join(tmpdir, 'gajim_f3tex')
 
         # build latex string
         write_latex(tmpfile + '.tex', self.code[2:len(self.code)-2])
 
-        # convert TeX to dvi
-        exitcode = try_run(['latex', '--interaction=nonstopmode',
+        # convert TeX to pdf
+        exitcode = try_run(['pdflatex', '--interaction=nonstopmode',
             tmpfile + '.tex'], tmpdir)
 
         if exitcode == 0:
-            # convert dvi to png
-            log.debug('DVI OK')
-            exitcode = try_run(['dvipng', '-bg', 'Transparent'] + fg_str('tex')\
-                + ['-T', 'tight', '-D', self.png_dpi, tmpfile + '.dvi', '-o',
-                tmpfile + '.png'], tmpdir)
-
+            # convert pdf to png
+            log.debug('PDF OK')
+            exitcode = try_run(['convert']
+                               + fg_str('hex')
+                               + ['-trim', '-density', self.png_dpi, tmpfile + '.pdf', tmpfile + '.png'], tmpdir)
             if exitcode:
-                # dvipng failed, try convert
-                log.debug('dvipng failed, try convert')
-                exitcode = try_run(['convert'] + fg_str('hex') + ['-trim',
-                    '-density', self.png_dpi, tmpfile + '.dvi',
-                    tmpfile + '.png'], tmpdir)
+                log.debug("convert failed!")
 
         # remove temp files created by us and TeX
-        extensions = ['.tex', '.log', '.aux', '.dvi']
+        extensions = ['.tex', '.log', '.aux', '.pdf']
         for ext in extensions:
             try:
                 os.remove(tmpfile + ext)
@@ -256,7 +252,7 @@ class LatexPluginConfiguration(GajimPluginConfigDialog):
         performs very simple checks (check if executable is in PATH)
         """
         self.show_result(_('Test Latex Binary'))
-        exitcode = try_run(['latex', '-version'], None)
+        exitcode = try_run(['pdflatex', '-version'], None)
         if exitcode != 0:
             self.show_result(_('  No LaTeX binary found in PATH'))
         else:
@@ -279,7 +275,7 @@ class LatexPluginConfiguration(GajimPluginConfigDialog):
     def on_png_dpi_label_changed(self, label):
         self.plugin.config['png_dpi'] = label.get_text()
 
-class LatexPlugin(GajimPlugin):
+class F3LatexPlugin(GajimPlugin):
     def init(self):
         self.config_dialog = LatexPluginConfiguration(self)
         self.config_default_values = {'png_dpi': ('108', '')}
@@ -297,7 +293,7 @@ class LatexPlugin(GajimPlugin):
         performs very simple checks (check if executable is in PATH)
         """
         self.available_text = ''
-        exitcode = try_run(['latex', '-version'], None)
+        exitcode = try_run(['pdflatex', '-version'], None)
         if exitcode != 0:
             latex_available = False
         else:
@@ -344,13 +340,13 @@ class LatexPlugin(GajimPlugin):
         """
         start rendering if clicked on a link
         """
-        if tag.get_property('name') != 'latex' or \
+        if tag.get_property('name') != 'f3latex' or \
         event.type != gtk.gdk.BUTTON_PRESS:            return
-        dollar_start, iter_start = iter.backward_search('$$',
+        percent_start, iter_start = iter.backward_search('%%',
             gtk.TEXT_SEARCH_TEXT_ONLY)
-        iter_end, dollar_end = iter.forward_search('$$',
+        iter_end, percent_end = iter.forward_search('%%',
             gtk.TEXT_SEARCH_TEXT_ONLY)
-        LatexRenderer(dollar_start, dollar_end, widget.get_buffer(), widget,
+        LatexRenderer(percent_start, percent_end, widget.get_buffer(), widget,
             self.config['png_dpi'])
 
     def textbuffer_live_latex_expander(self, tb):
@@ -372,15 +368,16 @@ class LatexPlugin(GajimPlugin):
                 start_it = end_it.copy()
                 start_it.backward_to_tag_toggle(eol_tag)
             points = []
-            tuple_found = start_it.forward_search('$$',
+            tuple_found = start_it.forward_search('%%',
                 gtk.TEXT_SEARCH_TEXT_ONLY)
             while tuple_found != None:
                 points.append(tuple_found)
-                tuple_found = tuple_found[1].forward_search('$$',
+                tuple_found = tuple_found[1].forward_search('%%',
                     gtk.TEXT_SEARCH_TEXT_ONLY)
 
             for pair in split_list(points):
-                tb.apply_tag_by_name('latex', pair[0][1], pair[1][0])
+                # Changed
+                tb.apply_tag_by_name('f3latex', pair[0][1], pair[1][0])
 
         end_iter = tb.get_end_iter()
         eol_tag = tb.get_tag_table().lookup('eol')
@@ -404,7 +401,8 @@ class LatexPlugin(GajimPlugin):
         tv = chat_control.conv_textview.tv
         tb = tv.get_buffer()
 
-        self.latex_tag = gtk.TextTag('latex')
+        # Changed
+        self.latex_tag = gtk.TextTag('f3latex')
         self.latex_tag.set_property('foreground', 'blue')
         self.latex_tag.set_property('underline', 'single')
         d['tag_id'] = self.latex_tag.connect('event', self.textview_event_after)

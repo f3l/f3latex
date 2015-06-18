@@ -1,1 +1,1 @@
-from latex import LatexPlugin
+from f3latex import F3LatexPlugin
