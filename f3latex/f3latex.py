@@ -1,26 +1,24 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8; fill-column: 79; -*-
 #
-## plugins/f3latex/f3latex.py
-##
-## Copyright (C) 2010-2011 Yves Fischer <yvesf AT xapek.org>
-## Copyright (C) 2011 Yann Leboulanger <asterix AT lagaule.org>
-## Copyright (C) 2015 Oliver Rümpelein <oli_r AT fg4f.de>
-##
-## This file is part of Gajim.
-##
-## Gajim is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published
-## by the Free Software Foundation; version 3 only.
-##
-## Gajim is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
-## You should have received a copy of the GNU General Public License
-## along with Gajim.  If not, see <http://www.gnu.org/licenses/>.
-##
+# plugins/f3latex/f3latex.py
 
+# Copyright (C) 2010-2011 Yves Fischer <yvesf AT xapek.org>
+# Copyright (C) 2011 Yann Leboulanger <asterix AT lagaule.org>
+# Copyright (C) 2015 Oliver Rümpelein <oli_r AT fg4f.de>
+
+# This file is part of Gajim.
+
+# Gajim is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; version 3 only.
+
+# Gajim is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with Gajim.  If not, see <http://www.gnu.org/licenses/>.
 
 from threading import Thread
 import os
@@ -36,7 +34,8 @@ from plugins import GajimPlugin
 from plugins.helpers import log, log_calls
 from plugins.gui import GajimPluginConfigDialog
 
-gtk.gdk.threads_init() # for gtk.gdk.thread_[enter|leave]()
+gtk.gdk.threads_init()  # for gtk.gdk.thread_[enter|leave]()
+
 
 def latex_template(code):
     return '''\\documentclass[ngerman,12pt,parskip=half]{scrartcl}
@@ -55,6 +54,7 @@ def latex_template(code):
 \\end{large}
 \\end{document}''' % (code)
 
+
 def write_latex(filename, str_):
     texstr = latex_template(str_)
 
@@ -63,13 +63,15 @@ def write_latex(filename, str_):
     file_.flush()
     file_.close()
 
+
 def popen_nt_friendly(command, directory):
     if os.name == 'nt':
         # CREATE_NO_WINDOW
         return Popen(command, creationflags=0x08000000, cwd=directory,
-            stdout=PIPE)
+                     stdout=PIPE)
     else:
         return Popen(command, cwd=directory, stdout=PIPE)
+
 
 def try_run(argv, directory):
     try:
@@ -83,11 +85,13 @@ def try_run(argv, directory):
             'error': helpers.decode_string(str(e))}
 
 BLACKLIST = ['\def', '\\let', '\\futurelet', '\\write', '\\input', '\\include',
-             '\\catcode', '\\makeatletter', '\\noexpand', '\\toksdef', '\\every',
-             '\\errhelp', '\\errorstopmode', '\\scrollmode', '\\nonstopmode',
-             '\\batchmode', '\\read', '\\csname', '\\newhelp', '\\relax', '\\afterground',
-             '\\afterassignment', '\\expandafter', '\\noexpand', '\\special', '\\command',
-             '\\loop', '\\return epeat', '\\toks', '\\output', '\\line', '\\mathcode', '\\name',]
+             '\\catcode', '\\makeatletter', '\\noexpand', '\\toksdef',
+             '\\every', '\\errhelp', '\\errorstopmode', '\\scrollmode',
+             '\\nonstopmode', '\\batchmode', '\\read', '\\csname', '\\newhelp',
+             '\\relax', '\\afterground', '\\afterassignment', '\\expandafter',
+             '\\noexpand', '\\special', '\\command', '\\loop',
+             '\\return epeat', '\\toks', '\\output', '\\line', '\\mathcode',
+             '\\name', ]
 
 
 class LatexRenderer(Thread):
@@ -95,7 +99,8 @@ class LatexRenderer(Thread):
         Thread.__init__(self)
 
         self.code = iter_start.get_text(iter_end)
-        self.mark_name = 'LatexRendererMark%s' % str(random.randint(0,1000))
+        self.mark_name = 'LatexRendererMark{1}'.format(
+            str(random.randint(0, 1000)))
         self.mark = buffer_.create_mark(self.mark_name, iter_start, True)
 
         self.buffer_ = buffer_
@@ -107,7 +112,7 @@ class LatexRenderer(Thread):
         # iter_start.forward_char()
         self.buffer_.insert(iter_start, _('Processing LaTeX'))
 
-        self.start() # start background processing
+        self.start()  # start background processing
 
     def run(self):
         try:
@@ -126,8 +131,9 @@ class LatexRenderer(Thread):
         """
         gtk.gdk.threads_enter()
         iter_mark = self.buffer_.get_iter_at_mark(self.mark)
-        iter_end = iter_mark.copy().forward_search(_('Processing LaTeX'),
-            gtk.TEXT_SEARCH_TEXT_ONLY)[1]
+        iter_end = iter_mark.copy()\
+                            .forward_search(_('Processing LaTeX'),
+                                            gtk.TEXT_SEARCH_TEXT_ONLY)[1]
         self.buffer_.delete(iter_mark, iter_end)
 
         pixbuf = self.widget.render_icon(gtk.STOCK_STOP, gtk.ICON_SIZE_BUTTON)
@@ -143,15 +149,15 @@ class LatexRenderer(Thread):
 
         def fg_str(fmt):
             try:
-                return [{'hex' : '+level-colors', 'tex' : '-fg'}[fmt],
-                    gajim.interface.get_fg_color(fmt)]
+                return [{'hex': '+level-colors', 'tex': '-fg'}[fmt],
+                        gajim.interface.get_fg_color(fmt)]
             except KeyError:
                 # interface may not be available when we test latex at startup
                 return []
             except AttributeError:
                 # interface may not be available when we test latext at startup
                 return {'hex': ['+level-colors', '0x000000'],
-                    'tex': ['-fg', 'rgb 0.0 0.0 0.0']}[fmt]
+                        'tex': ['-fg', 'rgb 0.0 0.0 0.0']}[fmt]
 
         try:
             tmpdir = mkdtemp(prefix='gajim_f3tex')
@@ -171,14 +177,18 @@ class LatexRenderer(Thread):
 
         # convert TeX to pdf
         exitcode = try_run(['pdflatex', '--interaction=nonstopmode',
-            tmpfile + '.tex'], tmpdir)
+                            tmpfile + '.tex'], tmpdir)
 
         if exitcode == 0:
             # convert pdf to png
             log.debug('PDF OK')
-            exitcode = try_run(['convert']
-                               + fg_str('hex')
-                               + ['-trim', '-density', self.png_dpi, tmpfile + '.pdf', tmpfile + '.png'], tmpdir)
+            exitcode = try_run(['convert'] +
+                               fg_str('hex') +
+                               ['-trim', '-density',
+                                self.png_dpi,
+                                tmpfile + '.pdf',
+                                tmpfile + '.png'],
+                               tmpdir)
             if exitcode:
                 log.debug("convert failed!")
 
@@ -197,7 +207,8 @@ class LatexRenderer(Thread):
             log.debug('PNG FAILED')
             os.remove(tmppng)
             os.rmdir(tmpdir)
-            self.show_error(_('Convertion to image failed\n===ORIGINAL CODE===='
+            self.show_error(_(
+                'Convertion to image failed\n===ORIGINAL CODE===='
                 '\n%s') % self.code[2:len(self.code)-2])
             return False
 
@@ -207,8 +218,9 @@ class LatexRenderer(Thread):
             pixbuf = gtk.gdk.pixbuf_new_from_file(tmppng)
             log.debug('png loaded')
             iter_mark = self.buffer_.get_iter_at_mark(self.mark)
-            iter_end = iter_mark.copy().forward_search('Processing LaTeX',
-                gtk.TEXT_SEARCH_TEXT_ONLY)[1]
+            iter_end = iter_mark.copy()\
+                                .forward_search('Processing LaTeX',
+                                                gtk.TEXT_SEARCH_TEXT_ONLY)[1]
             log.debug('Delete old Text')
             self.buffer_.delete(iter_mark, iter_end)
             log.debug('Insert pixbuf')
@@ -226,6 +238,7 @@ class LatexRenderer(Thread):
                 # Found bad command
                 return False
         return True
+
 
 class LatexPluginConfiguration(GajimPluginConfigDialog):
     def init(self):
@@ -247,7 +260,7 @@ class LatexPluginConfiguration(GajimPluginConfigDialog):
     def show_result(self, msg):
         self.result_label.set_text(self.result_label.get_text() + '\n' + msg)
 
-    def on_test_button_clicked(self,widget):
+    def on_test_button_clicked(self, widget):
         """
         performs very simple checks (check if executable is in PATH)
         """
@@ -268,6 +281,7 @@ class LatexPluginConfiguration(GajimPluginConfigDialog):
     def on_png_dpi_label_changed(self, label):
         self.plugin.config['png_dpi'] = label.get_text()
 
+
 class F3LatexPlugin(GajimPlugin):
     def init(self):
         self.config_dialog = LatexPluginConfiguration(self)
@@ -275,7 +289,7 @@ class F3LatexPlugin(GajimPlugin):
 
         self.gui_extension_points = {
             'chat_control_base': (self.connect_with_chat_control_base,
-                self.disconnect_from_chat_control_base)
+                                  self.disconnect_from_chat_control_base)
         }
         self.test_activatable()
         self.timeout_id = None
@@ -328,13 +342,18 @@ class F3LatexPlugin(GajimPlugin):
         start rendering if clicked on a link
         """
         if tag.get_property('name') != 'f3latex' or \
-        event.type != gtk.gdk.BUTTON_PRESS:            return
-        percent_start, iter_start = iter.backward_search('%%',
-            gtk.TEXT_SEARCH_TEXT_ONLY)
-        iter_end, percent_end = iter.forward_search('%%',
-            gtk.TEXT_SEARCH_TEXT_ONLY)
+           event.type != gtk.gdk.BUTTON_PRESS:
+            return
+        percent_start, iter_start = iter.backward_search(
+            '%%',
+            gtk.TEXT_SEARCH_TEXT_ONLY
+        )
+        iter_end, percent_end = iter.forward_search(
+            '%%',
+            gtk.TEXT_SEARCH_TEXT_ONLY
+        )
         LatexRenderer(percent_start, percent_end, widget.get_buffer(), widget,
-            self.config['png_dpi'])
+                      self.config['png_dpi'])
 
     def textbuffer_live_latex_expander(self, tb):
         """
@@ -343,7 +362,7 @@ class F3LatexPlugin(GajimPlugin):
         def split_list(list_):
             newlist = []
             for i in range(0, len(list_)-1, 2):
-                newlist.append( [ list_[i], list_[i+1], ] )
+                newlist.append([list_[i], list_[i+1], ])
             return newlist
 
         def detect_tags(tb, start_it=None, end_it=None):
@@ -355,12 +374,16 @@ class F3LatexPlugin(GajimPlugin):
                 start_it = end_it.copy()
                 start_it.backward_to_tag_toggle(eol_tag)
             points = []
-            tuple_found = start_it.forward_search('%%',
-                gtk.TEXT_SEARCH_TEXT_ONLY)
-            while tuple_found != None:
+            tuple_found = start_it.forward_search(
+                '%%',
+                gtk.TEXT_SEARCH_TEXT_ONLY
+            )
+            while tuple_found is not None:
                 points.append(tuple_found)
-                tuple_found = tuple_found[1].forward_search('%%',
-                    gtk.TEXT_SEARCH_TEXT_ONLY)
+                tuple_found = tuple_found[1].forward_search(
+                    '%%',
+                    gtk.TEXT_SEARCH_TEXT_ONLY
+                )
 
             for pair in split_list(points):
                 # Changed
@@ -373,7 +396,13 @@ class F3LatexPlugin(GajimPlugin):
         if it.get_offset() == self.last_eol_offset:
             if self.timeout_id:
                 gobject.source_remove(self.timeout_id)
-            self.timeout_id = gobject.timeout_add(100, detect_tags, tb, it, end_iter)
+            self.timeout_id = gobject.timeout_add(
+                100,
+                detect_tags,
+                tb,
+                it,
+                end_iter
+            )
         else:
             if self.timeout_id:
                 gobject.source_remove(self.timeout_id)
@@ -392,7 +421,8 @@ class F3LatexPlugin(GajimPlugin):
         self.latex_tag = gtk.TextTag('f3latex')
         self.latex_tag.set_property('foreground', 'blue')
         self.latex_tag.set_property('underline', 'single')
-        d['tag_id'] = self.latex_tag.connect('event', self.textview_event_after)
+        d['tag_id'] = self.latex_tag\
+                          .connect('event', self.textview_event_after)
         tb.get_tag_table().add(self.latex_tag)
 
         d['h_id'] = tb.connect('changed', self.textbuffer_live_latex_expander)
