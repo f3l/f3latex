@@ -28,6 +28,7 @@ from tempfile import mkstemp, mkdtemp
 import random
 from subprocess import Popen, PIPE
 
+from string import Template
 from common import gajim
 from common import helpers
 from plugins import GajimPlugin
@@ -38,7 +39,7 @@ gtk.gdk.threads_init()  # for gtk.gdk.thread_[enter|leave]()
 
 
 def latex_template(code):
-    return '''\\documentclass[ngerman,12pt,parskip=half]{scrartcl}
+    return Template('''\\documentclass[ngerman,12pt,parskip=half]{scrartcl}
 \\usepackage{graphicx}
 \\usepackage[utf8]{inputenc}
 \\usepackage[T1]{fontenc}
@@ -50,9 +51,9 @@ def latex_template(code):
 \\pagestyle{empty}
 \\begin{document}
 \\begin{large}
-%s
+$code
 \\end{large}
-\\end{document}''' % (code)
+\\end{document}''').substitute(code=code)
 
 
 def write_latex(filename, str_):
@@ -99,7 +100,7 @@ class LatexRenderer(Thread):
         Thread.__init__(self)
 
         self.code = iter_start.get_text(iter_end)
-        self.mark_name = 'LatexRendererMark{1}'.format(
+        self.mark_name = 'LatexRendererMark{0}'.format(
             str(random.randint(0, 1000)))
         self.mark = buffer_.create_mark(self.mark_name, iter_start, True)
 
