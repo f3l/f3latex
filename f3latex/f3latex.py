@@ -81,9 +81,9 @@ def try_run(argv, directory):
         log.info(out)
         return p.wait()
     except Exception, e:
-        return _('Error executing "%(command)s": %(error)s') % {
-            'command': " ".join(argv),
-            'error': helpers.decode_string(str(e))}
+        return _('Error executing "{command}": {error}')\
+            .format(command=" ".join(argv),
+                    error=helpers.decode_string(str(e)))
 
 BLACKLIST = ['\def', '\\let', '\\futurelet', '\\write', '\\input', '\\include',
              '\\catcode', '\\makeatletter', '\\noexpand', '\\toksdef',
@@ -167,8 +167,9 @@ class LatexRenderer(Thread):
         except Exception:
             msg = 'Could not create temporary files for Latex plugin'
             log.debug(msg)
-            self.show_error(_('latex error: %s\n===ORIGINAL CODE====\n%s') % (
-                msg, self.code[2:len(self.code)-2]))
+            self.show_error(
+                _('latex error: {error}\n===ORIGINAL CODE====\n{code}')
+                .format(error=msg, code=self.code[2:len(self.code)-2]))
             return False
 
         tmpfile = os.path.join(tmpdir, 'gajim_f3tex')
@@ -208,12 +209,12 @@ class LatexRenderer(Thread):
             log.debug('PNG FAILED')
             os.remove(tmppng)
             os.rmdir(tmpdir)
-            self.show_error(_(
-                'Convertion to image failed\n===ORIGINAL CODE===='
-                '\n%s') % self.code[2:len(self.code)-2])
+            self.show_error(
+                _('Convertion to image failed\n===ORIGINAL CODE====\n{code}')
+                .format(code=self.code[2:len(self.code)-2]))
             return False
 
-        log.debug('Loading PNG %s' % tmppng)
+        log.debug('Loading PNG {file}'.format(file=tmppng))
         try:
             gtk.gdk.threads_enter()
             pixbuf = gtk.gdk.pixbuf_new_from_file(tmppng)
@@ -227,8 +228,9 @@ class LatexRenderer(Thread):
             log.debug('Insert pixbuf')
             self.buffer_.insert_pixbuf(iter_end, pixbuf)
         except gobject.GError:
-            self.show_error(_('Cannot open %s for reading') % tmppng)
-            log.debug('Cant open %s for reading' % tmppng)
+            self.show_error(_('Cannot open {file} for reading')
+                            .format(file=tmppng))
+            log.debug('Cant open {file} for reading'.format(file=tmppng))
         finally:
             gtk.gdk.threads_leave()
             os.remove(tmppng)
@@ -329,14 +331,14 @@ class F3LatexPlugin(GajimPlugin):
             else:
                 if pkgs:
                     pkgs += _(' and ')
-                pkgs += '%s' % ('ImageMagick')
+                pkgs += '{0}'.format('ImageMagick')
             if self.available_text:
                 self.available_text += ' and '
             self.available_text += _('Imagemagick is not available')
 
         if self.available_text:
             self.activatable = False
-            self.available_text += _('. Install %s') % pkgs
+            self.available_text += _('. Install {pkg}').format(pkg=pkgs)
 
     def textview_event_after(self, tag, widget, event, iter):
         """
