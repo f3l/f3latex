@@ -1,5 +1,8 @@
 # F3LaTeX Plugin#
 
+*As I switched client, the integration of f3latex into gajim is stopped. It might or might not work for you. If you ask kindly I may take a look at
+  it, but there will not be any further development.*
+
 ## Summary ##
 
 F3LaTeX (F3LP) is a plugin for [Gajim][1], based upon [Latex-Plugin][2] (LP) by Yves Fischer and Yann Leboulanger.
